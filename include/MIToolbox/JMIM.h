@@ -28,7 +28,7 @@ extern "C" {
 #endif 
 
 double joint_MI(uint *i, uint *j, uint *target, uint n);
-double minJointMI(uint **feature_2d, uint *target, uint f_n, uint n, int *sset, uint k);
+    double minJointMI(uint **feature_2d, uint *target, uint n, int *sset, uint k, uint f);
 
 #ifdef __cplusplus
 }

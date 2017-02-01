@@ -13,7 +13,7 @@
 PREFIX = /usr/local
 CFLAGS = -O3 -fPIC -std=c89 -Wall -Werror
 INCLUDES = -Iinclude
-CC = gcc
+CC = clang
 objects = build/ArrayOperations.o build/CalculateProbability.o \
 		  build/Entropy.o build/MutualInformation.o \
 		  build/RenyiEntropy.o build/RenyiMutualInformation.o \
@@ -35,7 +35,6 @@ x86:
 	$(MAKE) libMIToolbox.so "CFLAGS = -O3 -fPIC -m32"
 	
 x64:
-	python setup.py build_ext --inplace
 	$(MAKE) libMIToolbox.so "CFLAGS = -O3 -fPIC -m64"
 	
 intel:

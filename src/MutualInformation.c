@@ -52,22 +52,19 @@ double calcMutualInformation(uint *dataVector, uint *targetVector, int vectorLen
   double ans = 0;
   JointProbabilityState state = calculateJointProbability(dataVector,targetVector,vectorLength);
   
-  int i;
-
 
   double mutualInformation = mi(state);
 
   ans = mutualInformation;
+
   freeJointProbabilityState(state);
 
-
-  return (double) ans;
+  return ans;
 }/*calculateMutualInformation(uint *,uint *,int)*/
 
 double calcMutualInformations(uint *dataVector, uint *targetVector, int vectorLength, double *ans) {
   JointProbabilityState state = calculateJointProbability(dataVector,targetVector,vectorLength);
   double mutualInformation = mi(state);
-  fprintf(stderr, "%f\n", mutualInformation);
   *ans = mutualInformation;
   freeJointProbabilityState(state);
   return (double) mutualInformation;

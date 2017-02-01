@@ -22,19 +22,16 @@ condInfo          = lib.calcConditionalMutualInformation
 condInfo.restype  = ctypes.c_double
 condInfo.argtypes = [_single, _single, _single, ctypes.c_int32]
 
+jointMinInfo     = lib.minJointMI
+jointMinInfo.restype = ctypes.c_double
+jointMinInfo.argtypes = [_doublepp, _single, ctypes.c_uint, _single, ctypes.c_uint, ctypes.c_uint]
 
 # Data Science
 import matplotlib.pyplot as plt
 import pandas as pd
 from joblib import Parallel, delayed
 import multiprocessing
-
-# Machine Learning
-from sklearn.feature_selection import SelectFromModel, chi2, f_classif, mutual_info_classif
 from sklearn import preprocessing
-from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.linear_model import Perceptron
-
 def jointMI(i, j, X, y):
     return(float(condInfo(X[:,i], y, X[:,j], y.size) + mutInfo(X[:,j], y, y.size)))
 
@@ -44,6 +41,10 @@ def minJointMI(f, Sset, X, y):
 
 def mutInfoP(x,y):
     return(float(mutInfo(x,y, y.size)))
+
+def CMinJointMI(X, y, Sset, f):
+    ans = jointMinInfo(X, y, y.size, Sset, Sset.size, f)
+    return ans
 
 '''
 Wrapper to hold the dataset and run a variety of feature selectors on.
@@ -64,6 +65,8 @@ class FeatureSelection(object):
         print("past first select")
         print(Sset)
         #add features to it
+        Xt  = self.X.T
+        Xpp = (Xt.ctypes.data + np.arange(Xt.shape[0]) * Xt.strides[0]).astype(np.uintp)
         while(k > 1):
             scores = Parallel(n_jobs=n_jobs)(delayed(minJointMI)(f, Sset, self.X, self.y) for f in Fset)
             fStar = Fset[np.argmax(scores)]
@@ -72,6 +75,28 @@ class FeatureSelection(object):
             k = k - 1
             print(fStar)
         return(Sset)
+
+    def jmimForwardSearchC(self, k, n_jobs=1):
+        print("the data is %d by %d" % (self.X.shape[0], self.X.shape[1]))
+        Fset = np.array(list(range(self.X.shape[1])), dtype=ctypes.c_uint)
+        #find top MI
+        scores = Parallel(n_jobs=n_jobs)(delayed(mutInfoP)(f, self.y) for f in self.X.T)
+        Sset = np.array(Fset[np.argmax(scores)], dtype=ctypes.c_uint)
+        Fset = np.delete(Fset, np.argwhere(Fset==Sset))
+        print("past first select")
+        print(Sset)
+        #add features to it
+        Xt  = self.X.T
+        Xpp = (Xt.ctypes.data + np.arange(Xt.shape[0]) * Xt.strides[0]).astype(np.uintp)
+        while(k > 1):
+            scores = Parallel(n_jobs=n_jobs)(delayed(CMinJointMI)(Xpp, self.y, Sset, f) for f in Fset)
+            fStar = Fset[np.argmax(scores)]
+            Sset  = np.append(Sset, fStar)
+            Fset = np.delete(Fset, np.argwhere(Fset==Sset[-1]))
+            k = k - 1
+            print(fStar)
+        return(Sset)
+
 
     def initializeDataset(self):
         print("***** Initializing Dataset *****")
@@ -84,11 +109,10 @@ class FeatureSelection(object):
 
 
 def main():
-    pickleLoc = "/space3/clyde/testPickle.pkl"
-    print("***** Script Started *****")
     df = pd.read_csv("~/tester.csv")
     fs = FeatureSelection(df)
     print(fs.jmimForwardSearch(2, n_jobs=1))
+    print(fs.jmimForwardSearchC(10, n_jobs=1))
 
 
 if  __name__ =='__main__':
